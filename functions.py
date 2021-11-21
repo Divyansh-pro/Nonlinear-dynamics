@@ -12,7 +12,7 @@ def reconstructed_phase_space(observations, tau=15, m=3):
     '''
     x_t = observations
     T = len(x_t)
-    yd = np.zeros((T-2*tau,m))
+    yd = np.zeros((T-(m-1)*tau,m))
     for i in range(m):
         yd[:,i] = x_t[i*tau:T-(m-i-1)*tau]
         
@@ -96,3 +96,41 @@ def presOrient(vectorInit, pos, pointsAll, len_thr=5,lmin=0.1, minimize='angle',
         return replacement_pt
     else:
         print(f"invalid input for argument 'minimize'. Valid inputs: 'len' or 'angle'")
+        
+
+def compute_lambda(yd, t, fidloc_init, tevol, dmin, anglemax):
+    """
+    Computes and returns the largest lyapunov exponent, along with:
+    local lyapunov exponent
+    lengths of separation vectors in each fixed-time evolution cycle
+    initial and final lengths in each fixed-time evolution cycle
+    """
+    lengthsInit = [] #just after replacement- initial length
+    lengthsFinal = [] #just before replacement- end of one cycle
+    lengthsAll = []
+    N, m = yd.shape
+    fidloc = fidloc_init
+    clos = closest_point(fidloc, yd, dmin=dmin)
+    niter = math.floor((N-fidloc)/tevol)-1 #number of replacements
+    
+    tic = time.time()
+    for j in range(niter):
+        vectorInit = yd[clos,:]-yd[fidloc,:]
+        fidloc, _, lengths = fixed_time_evol(tevol, fidloc, clos, yd)
+        lengthsInit.append(lengths[0])
+        lengthsFinal.append(lengths[-1])
+        lengthsAll.append(lengths)
+        clos = presOrient(vectorInit=vectorInit, pos=fidloc, pointsAll=yd, lmin=dmin, minimize='len', angle_thr=anglemax, tevol=tevol)
+    print(f"for {niter} iterations (fixed time evolution cycles), time taken={time.time()-tic}s")
+    
+    log_ratio = np.log2( np.array(lengthsFinal)/np.array(lengthsInit) )
+    local_lam = log_ratio/(t[tevol]-t[0])
+    
+    lamAll = []
+    for i in range(niter):
+        lam = 0
+        if i>0:
+            lam = np.sum(log_ratio[:i])/(t[i*tevol]-t[0])
+        lamAll.append(lam)
+    
+    return lamAll, local_lam, lengthsAll, lengthsInit, lengthsFinal
