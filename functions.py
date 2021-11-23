@@ -121,7 +121,7 @@ def compute_lambda(yd, t, fidloc_init, tevol, dmin, anglemax):
         lengthsFinal.append(lengths[-1])
         lengthsAll.append(lengths)
         clos = presOrient(vectorInit=vectorInit, pos=fidloc, pointsAll=yd, lmin=dmin, minimize='len', angle_thr=anglemax, tevol=tevol)
-    print(f"for {niter} iterations (fixed time evolution cycles), time taken={time.time()-tic}s")
+    # print(f"for {niter} iterations (fixed time evolution cycles), time taken={time.time()-tic}s")
     
     log_ratio = np.log2( np.array(lengthsFinal)/np.array(lengthsInit) )
     local_lam = log_ratio/(t[tevol]-t[0])
